@@ -1,0 +1,44 @@
+#include<sys/resource.h>
+
+int getpriority(int which,id_t who);
+int setpriority(int which,id_t who,int priority);
+int getrlimit(int resource,struct rlimit *r_limit);
+int setrlimit(int resource,sonst struct rlimit *r_limit);
+int getrusage(int who,struct rusage *r_usage);
+id_t是一个整数类型，用于用户和组标识符。在头文件sys/resource.h中定义的rusage结构用来确定当前程序已耗费了多少CPU时间
+rusage成员
+struct timeval ru_utime           使用的用户时间
+struct timeval ru_stime           使用的系统时间
+timeval结构定义在头文件sys/time.h中，它包括成员tv_sec和tv_usec,分别代表秒和微秒。
+一个程序耗费的CPU时间可分为用户时间（程序执行自身的指令所耗费的时间）和系统时间（操作系统为程序执行所耗费的时间，即执行输入输出操作的系统调用或其他系统函数所花费的时间）。
+getrusage函数将CPU时间信息写入参数r_usage指向的rusage结构中。
+who参数
+RUSAGE_SELF     进返回当前程序的使用信息
+RUSAGE_CHILDREN 还包括子进程的使用信息
+每个运行的程序都有一个与之关联的优先级，优先级越高的程序将分配到更多的CPU时间
+普通用户只能降低其程序的优先级，而不能升高
+应用程序可以用getpriority和setpriority函数来确定和更改它们的优先级。被优先级函数检查或更改的进程可以用进程标识符，组标识符或用户来确定。
+which参数
+PRIO_PROCESS  who参数是进程标识符
+PRIO_PGRP     who参数是进程组
+PRIO_USER     who参数是用户标识符
+例如，确定当前进程的优先级，可以调用
+priority=getpriority（PRIO_PROCESS，getpid（））；
+setpriority函数用于设置一个新的优先级
+默认的优先级是0.正数优先级用于后台任务，它们只在没有其他更高优先级的任务准备运行时才执行。负数优先级使一个程序运行更频繁，获得更多的CPU可用时间，优先级的范围是-20～20
+getpriority在成功时返回一个有效的优先级，失败时返回-1并设置errno变量。因为-1是一个有效的优先级，所以在调用getpriority之前将errno设置为0,并在函数返回时检查它是否为0.setpriority在成功时返回0，失败时返回-1.
+系统资源方面的限制可以通过getrlimit和setrlimit来读取和设置。
+rlimit成员
+rlim_t rlim_cur  当前的软限制
+rlim_t rlim_max  硬限制
+类型rlim_是一个整数类型，它用来描述资源级别。
+软限制是一个建议性的最好不要超越的限制，如果超越可能会导致库函数返回错误。硬限制如果被超越，则可能会导致系统通过发送信号的方式来终止程序的运行。
+有许多资源可以进行限制，它们由rlimit函数中的resource参数来指定，并在头文件sys/resource.h定义
+resource参数
+RLIMIT_CORE      内核存储文件的大小限制
+RLIMIT_CPU       cpu时间限制（以秒为单位）
+RLIMIT_DATA      数据段限制（以字节为单位）
+RLIMIT_FSIZE     文件大小限制（以字节为单位）
+RLIMIT_NOFILE    可以打开的文件数限制
+RLIMIT_STACK     栈大小限制
+RLIMIT_AS        地址空间限制

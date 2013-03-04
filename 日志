@@ -1,0 +1,33 @@
+#iclude <syslog.h>
+void syslog(int priority,const char *message,arguments.....);
+syslog函数向系统的日志设施发送一条日志信息，每条信息都有一个priority参数，该参数是一个与严重级别与一个设施值的按位或。严重级别控制日志信息的处理方式，设施值记录日志信息的来源。
+定义在头文件syslog.h中的设施值包括LOG_USER（默认值）————它指出消息来自一个用户应用程序，以及LOG_LOCAL0,LOG_LOCAL1直到LOG_LOCAL7,它们的含义由本地管理员指定。
+LOG_EMERG 紧急情况
+LOG_ALERT 高优先级故障，例如数据库崩溃
+LOG_CRIT  严重错误，例如硬件故障
+LOG_ERR   错误
+LOG_WARNING 警告
+LOG_NOTICE 需要注意的特殊情况
+LOG_INFO  一般信息
+LOG_DEBUG 调试信息
+
+LOG_EMERG可能会广播给所有用户，LOG_ALERT信息可能会email给管理员，LOG_DEBUG信息可能会被忽略，而其他信息被写入日志文件。
+syslog创建的日志信息包含消息头和消息体。消息头根据设施值及日期和时间创建消息体根据syslog的message创建，该参数的作用类似于printf中的格式字符串。syslog的其他参数要根据message字符串中printf风格的转换控制符而定。此外，转换控制符%m可用于插入与错误变量errno当前值对应的出错信息字符串。
+
+
+#include<syslog.h>
+void close(void);
+void openlog(const char *ident,int logopt,int facility);
+int setlogmask(int maskpri);
+
+调用openlog函数来改变日志信息的表示方式。它可以设置一个字符串ident，该字符串会添加在日志信息的前面。可以指明是哪个程序创建了这条信息。facility参数记录一个被用于后续syslog调用的默认设施值，其默认值是LOG_USER。logopt参数对后续syslog调用的行为进行配置
+
+logopt参数
+LOG_PID     在日志信息中包含进程标识符，这是系统分配给每个进程的一个唯一值
+LOG_CONS    如果信息不能被记录到日志文件中，就把它们发送到控制台
+LOG_ODELAY  在第一次调用syslog时才打开日志设施
+LOG_NDELAY  立即打开日志设施，而不是等到第一次记录日志时
+openlog函数会分配并打开一个文件描述符，并通过它来写日志，可以调用closelog函数关闭它。注意：在调用syslog之前无需调用openlog，因为syslog会根据需要自行打开日志设施
+可以通过使用setlogmask函数来设置一个日志掩码并通过它来控制日志信息的优先级。优先级未在日志掩码中置位的后续syslog调用都将被丢弃
+可以用LOG_MASK（priority）为日志信息创建一个掩码，它的作用是创建一个只包含一个优先级的掩码。还可以用LOG_UPTO(priority)来创建一个指定优先级之上的所有优先级（包括指定优先级）构成的掩码。
+

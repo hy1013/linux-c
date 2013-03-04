@@ -1,0 +1,157 @@
+linux中的一切东西都可以看成是文件
+目录也是文件，但它是一种特殊类型的文件
+目录是用于保存其他文件的节点号和名字的文件。目录文件中的每个数据项都是指向某个文件节点的链接，删除文件名就等于删除与之对应的链接（文件的节点号可以用ln -i查看）ln命令在不同文件中创建指向同一个文件的链接
+删除一个文件是，实际上是删除了该文件对应的目录项，同时指向该文件的链接数减一。
+/dev/console 系统控制台，错误信息和诊断信息会被发往这个设备。
+/dev/tty
+/dev/null 空设备，所有写向这个设备的输出都将被丢弃，而读这个设备会立即返回一个文件尾标志，因此，在cp命令里可以把它用作复制空文件的源文件，人们常把不需要的输出重定向到/dev/null
+设备包括字符设备，块设备，硬盘是典型的块设备
+
+
+
+系统调用和设备驱动程序
+open：打开文件或设备
+read：从打开的文件或设备里读取数据
+write：向文件或设备写如数据
+close：关闭文件或设备
+ioctl：把控制信息传递给设备驱动程序 ioctl不需要具备可移植性，用法随设备的不同而不同
+
+
+
+底层文件的访问
+
+当一个程序打开时，它一般会有3个已经打开的文件描述符
+0：标准输入
+1：标准输出
+2：标准错误
+
+
+write系统调用
+#include<unistd.h>
+size_t write(int fildes,const void *buf ,size_t nbytes);
+把缓冲区buf的前nbytes个字节写入与文件描述符fildes关联的文件中。它返回实际写入的字节数。如果文件描述符有错或者底层的设备驱动程序对数据块的长度比较敏感该返回值可能会小于nbytes，如果返回值为0,表示未写入任何数据如果返回的是-1表示在系统调用中出现了错误，错误代码保存在全局变量errno中
+
+
+read系统调用
+
+#include<unistd.h>
+size_t read(int fildes,void *buf,size_t nbytes);
+
+从与文件描述符fildes相关的文件里读取nbytes个字节的数据，并把它们放到数据区buf中，它返回实际读入的字节数，这可能会小于请求的字节数，如果read调用返回0,表示未读入任何数据，已到达了文件尾。同样，如果返回的是-1,就表示出现了错误
+
+
+open系统调用
+
+#include<fcntl.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+
+int open(const char *path,int oflags);
+int open与(const char *path,int oflags,mode_t mode);
+
+open建立了一条到文件或设备的访问路径。如果调用成功，它将返回一个可以被read，write和其他系统调用使用的文件描述符。这个文件描述符是唯一的它不会与任何其他运行中的进程共享。如果两个程序同时打开同一个文件，他们会得到两个不同的文件描述符。如果他们都对文件进行写操作，那么他们会个写个的，分别接着上次离开的位置继续往下写。数据不会交织在一起，而是彼此相互覆盖。两个程序对文件的读写位置不同。可以通过锁功能来防止冲突
+
+path路径
+oflags打开文件所指定的动作
+
+O_RDONLY 以只读方式打开
+O_WRONLY 以只写方式打开
+O_RDWR 以读写方式打开
+
+
+oflags参数下列可选模式（ 按位或）
+O_APPEND   把写入数据追加在文件的末尾
+O_TRUNC  把文件长度置为零，丢弃已有的内容
+O_CREAT  如果需要，就按参数mode中给出的访问模式创建文件 
+O_EXCL  与O_CREAT一起使用，确保调用者创建文件。open调用是一个原子操作，即他只执行一个函数调用。使用这个可选模式可以防止两个程序同时创建同一个文件。如果文件存在，open将调用失败
+
+open调用成功返回一个新的文件描述符（非负整数）。在失败时返回负一，并设置全局变量errno来指明失败的原因，新文件描述符总是使用未用文件描述符的最小值
+。例如一个文件关闭了他的标准输出，然后再次调用open，文件描述符1就会被重新使用，并且标准输出将被有效的重定向到另一个文件或设备
+
+当使用O_CREAT标志的open调用来创建文件时，必须使用有3个参数格式的open调用。
+第3个参数mode是几个标志位按位或后得到的，这些标志在头文件sys/stat.h中定义
+
+S_IRUSR 读权限，文件属主 
+S_IWUSR 写权限，文件属主
+S_IXUSR 执行权限，文件属主
+S_IRGRP 读权限，文件所属组
+S_IWGRP 写权限，文件所属组
+S_IXGRP 执行权限，文件所属组
+S_IROTH 读权限，其他用户
+S_IWOTH 写权限，其他用户
+S_IXOTH 执行权限，其他用户
+
+例子
+open（“myfile”，O_CREAT,S_IRUSR|S_IXUSR)
+创建一个名为myfile的文件，文件属主拥有读权限，其他用户拥有执行权限，且只设置了这些权限
+
+
+close系统调用
+
+#include<unistd.h>
+int close(int fildes);
+
+close 调用成功返回0,出错返回-1
+
+
+ioctl系统调用
+
+#include<unistd.h>
+int ioctl(int fildes,int cmd, .....);
+ioctl对描述符fildes引用的对象执行cmd参数中给出的操作。根据设备所支持操作的不同，他可能会有一个可选的第三参数
+
+
+例子
+在linux系统上对ioctl的如下调用将打开键盘上的led灯
+ioctl(tty_fd,KDSETLED,LED_NUM|LED_CAP|LED_SCR);
+
+
+其他与文件有关的系统调用
+
+lseek系统调用
+对文件描述符fildes的读写指针进行设置。可以用它来设置文件的下一个读写位置。读写指针既可以被设置为文件的某个绝对位置，也可以设置为相对于当前位置或文件尾的某个相对位置
+#include<unistd.h>
+#include<sys/types.h>
+
+off_t lseek(int fildes,off_t offset,int whence);
+off_set参数用来制定位置，而whence参数定义该偏移值的用法。
+whence可以取下列值
+SEEK_SET:offset是一个绝对位置
+SEEK_CUR:offset是相对于当前位置的一个相对位置
+SEEK_END:offset是相对于文件尾的一个相对位置
+lseek返回从文件到文件指针被设置处的字节偏移，失败时返回-1.参数offset的类型off_t是一个与具体实现有关的整数类型，它定义在sys/types.h中
+
+
+fstat,stat和lstat的系统调用
+fstat系统调用返回与打开的文件描述符相关的文件的状态信息，该信息将会写到一个buf结构中，buf的地址以参数形式传递给fstat
+
+原型
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+
+int fstat(int fildes,struct stat *buf);
+int stat(const char *path,struct stat *buf);
+int lstat(const char *path,struct stat *buf);
+头文件sys/types.h是可选的
+stat和lstat返回的是通过文件名查到的状态信息。他们产生相同的结果，但当文件是一个符号链接时，lstat返回的是符号链接本身的信息，而stat返回的是该链接指向的文件信息
+
+st_mode 文件权限和文件类型信息
+st_ino 与该文件关联的inode
+st_dev  保存文件的设备
+st_uid 文件属主的UID号
+st_gid 文件属主的GID号
+st_atime 文件上一次被访问的时间
+st_ctime文件的权限，属主，组或内容上一次被修改的时间
+st_mtime 文件的内容上一次被修改的时间
+st_nlink 该文件上硬链接的个数
+
+
+dup和dup2系统调用
+
+dup系统调用提供了一种复制文件描述符的方法，使我们能够通过两个或更多个不同的文件描述来访问同一个文件，这可以用在文件的不同位置对数据进行读写。dup系统调用复制文件描述符fildes，返回一个新的文件描述符。dup2系统调用则是通过明确指定描述符来把一个文件描述符复制为另一个文件描述符
+原型如下：
+#include<unistd.h>
+int dup(int fildes);
+int dup2(int fildes,int fildes2);
+

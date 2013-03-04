@@ -1,0 +1,54 @@
+chmod系统调用
+可以通过chmod来改变文件或目录的访问权限
+原型
+int chmod（const char *path,mode_t mode);
+path参数指定的文件被修改为具有mode参数给出的访问权限。mode参数与open调用一样，也是对所要求的访问权限进行按位OR操作。
+
+
+chown系统调用
+超级用户可以用chown系统调用改变一个文件的属主
+#include<sys/types.h>
+#include<unistd.h>
+int chown(const char *path,uid_t owner,gid_t group);
+
+
+
+unlink,link和symlink系统调用
+unlink系统调用删除一个文件的目录并减少它的链接数。它在成功时返回0,失败时返回-1,如果想通过调用这个函数来成功删除文件，你就必须拥有该文件所属目录的写和执行的权限
+原型：
+#include<unistd.h>
+
+int unlink(const char *path);
+int link(const char *path1,const char *path2);
+int symlink(const chat *path1,const char *path2);
+如果一个文件的链接数减少到0,并且没有进程打开它，这个文件就会被删除。事实上，目录总是被立刻删除，但文件所占用的空间要等到最后一个进程，关闭它之后才会被系统回收。rm使用的就是这个调用。
+link系统调用将创建一个指向已有文件path1的新链接。新目录项由path2给出。可以通过symlink系统调用以类似的方式创建符号链接。
+
+
+
+
+mkdir和rmdir系统调用
+建立和删除目录
+#include<sys/types.h>
+#include<sys/stat.h>
+
+int mkdir(const char *path,mode_t mode);
+
+
+#include<unistd.h>
+int rmdir(const chat *path);
+
+rmdir用于删除目录，但只有在目录为空时才行。
+
+
+
+chdir系统调用和getcwd函数
+#include<unistd.h>
+int chdir(const char *path);
+程序可以通过getcwd函数来确定自己的当前的工作目录
+#include<unistd.h>
+chat *getcwd(char *buf,size_t size);
+getcwd函数把当前目录的名字写到给定的缓冲区buf里。如果目录名的长度超出了参数size给出的缓冲区长度（一个ERANGE错误），他就返回NULL。如果成功，它返回指针buf
+
+
+

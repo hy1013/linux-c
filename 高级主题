@@ -1,0 +1,50 @@
+fcntl系统调用
+#include<fcntl.h>
+
+int fcntl(int fildes,int cmd);
+int fcntl(int fildes,int cmd,long arg);
+
+fcntl(fileds,F_DUPFD,newfd):返回一个新的文件苗舒符，其数值大于或等于整数newfd。新的文件描述符是描述符fildes的一个副本，根据已打开的文件数目和newfd值的情况，它的效果可能和系统调用dup（fildes）完全一样
+fcntl（fildes，F_GETFD): 这个调用返回在fcntl.h头文件里定义的文件描述符标志，其中包括FD_CLOEXEC,它的作用是决定是否成功调用了某个exec系列的系统调用之后关闭该文件描述符。
+fcntl（fildes，F_SETFD，flags）：设置文件描述符，通常仅用来设置FD_CLOEXEC.
+fcntl（fildes，F_GETTFL）和fcntl（fildes，F_SETTFL，flags）：分别用来获取和设置文件状态标志和访问模式。可以利用在fcntl.h头文件中定义的掩码O_ACCMODE来提取出文件的访问模式。
+
+mmap函数
+mmap（内存映射）函数的作用是建立一段可以被两个或更多个程序读写的内存。
+#include <sys/mman.h>
+
+void *mmap(void *addr,size_t len,int prot,int flags,int fildes,off_t off);
+mmap函数创建一个指向一段内存区域的指针，该内存区域可以通过一个打开的文件描述符的文件的内容相关联。
+off参数改变经共享内存段访问的文件中数据的起始偏移值。打开的文件描述符由fildes参数给出。可以访问的数据量（即内存段的长度）由len参数设置
+可以通过addr参数来请求使用某个特定的内存地址。如果它的取值为0,结果指针就将自动分配。
+prot参数：
+PROT_READ: 允许读内存段
+PROT_WRITE: 允许写该内存段
+PROT_EXEC: 允许执行该内存段
+PROT_NONE: 该内存段不允许被访问
+flags参数
+MAP_PRIVATE 内存段私有，对它的修改只对本程序有效
+MAP_SHARED 对该内存段的修改保存到磁盘文件中
+MAP_FIXED 该内存段必须位于addr指定的地址处
+
+
+
+msync函数
+把该内存段的某个部分或整段中的修改写回到被映射的文件中（或者从被映射的文件里读出）
+#include<sys/mman.h>
+int msync(void *addr,size_t len,int flags);
+内存段需要修改的部分由作为参数传递过来的起始地址addr和长度len确定。
+flags参数
+MS_ASYNC   采用异步写方式
+MS_SYNC    采用同步写方式
+MS_INVALIDATE  从文件中读回数据
+
+
+
+
+
+
+munmap函数
+#include<sys/mman.h>
+int munmap(void *addr,size_t len);
+

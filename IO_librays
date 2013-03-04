@@ -1,0 +1,104 @@
+启动程序时，3个文件流是自动打开的。即stdin，stdout，stderr。都在stdio.h中有定义，分别代表标准输入，标准输出，标准错误，与底层文件描述符0,1和2相对应
+
+fopen函数
+fopen类似于底层的open系统调用，主要用于文件和终端的输入输出。如果要对设备进行明确的控制，最好使用底层系统调用，
+原型
+#include<stdio.h>
+FILE *fopen(const char *filename,const char *mode);
+mode 指定打开的方式
+“r”或“rb”：以只读的方式打开
+“w”或“wb”：以写的方式打开，并把文件长度截短为0
+”a“或”ab“：以写方式打开，新内容追加在文件尾
+”r+“或”rb+“或”r+b“：以更新方式打开（读和写）
+”w+“或”wb+“或”w+b“：以更新方式打开，并把文件长度截短为0
+”a+”或“ab+”或“a+b”：以更新方式打开，新内容追加在文件尾
+
+字母b表示文件是一个二进制文件而不是文本文件
+注意：unix和linux把所有文件都当作二进制文件，mode参数必须是一个字符串。而不是一个字符，所以总是应该使用双引号，而不是单引号
+fopen成功时返回一个非空的FILE *指针，失败时返回NULL值，NULL值在头文件stdio.h中有定义
+
+可用的文件流数量和文件描述符一样，都有限制，实际的限制由头文件stdio.h中FOPEN_MAX来定义，他的值至少为8,在linux中，通常是16
+
+
+
+
+
+fread函数
+用于从一个文件流里读取数据。数据从文件流stream读到有ptr指向的数据缓冲区里。fread和fwrite都是对数据进行操作，size参数指定每个数据记录的长度，计数器nitems给出要传输的记录个数。他的返回值是成功读到缓冲区里的记录的个数（而不是字节数），当到达文件尾时，它的返回值可能小于nitems，甚至可以是0.
+函数原型：
+#include<stdio,h>
+
+size_t fread(void *ptr,size_t size,size_t nitems,FILE *stream);
+
+
+
+
+fwrite函数
+fwrite库函数与fread有相似的接口。它从指定的数据缓冲区里取出数据记录，并把他们写到输出流中。它的返回值是成功写入的记录的个数
+函数原型：
+#include<stdio.h>
+size_t fwrite(const void *ptr,size_t size,size_t nitems,FILE *stream);
+
+
+fclose函数
+fclose库函数关闭指定的文件流stream，使所有尚未写出的数据都写出。因为stdio库会对数据进行缓冲，所以使用fclose很重要。如果程序需要确保数据已经全部写出就应该调用fclose函数。
+函数原型：
+#include<stdio.h>
+int fclose(FILE *stream);
+
+
+
+fflush 函数
+fflush是把文件流里的所有未写出数据立刻写出
+调用fclose隐含的使用了一次flush操作。
+函数原型：
+#include<stdio.h>
+int fflush(FILE *stream);
+
+
+
+fseek函数
+fseek是与lseek系统调用对应的文件流函数，他在文件流里为下一次读写操作指定位置。offset和whence函数的含义取值与前面的lseek系统调用完全一样。但lseek返回的是一个off_t数值，而fseek返回的是一个整数：0表示成功，-1表示失败并设置errno指出错误
+函数原型：
+#include<stdio.h>
+int fseek(FIEL *stream,long int offset,int whence);
+
+
+
+fgetc,getc和getchar函数
+fgetc函数从文件流里取出下一个字节并把它作为一个字符返回。当它到达文件尾或出现错误时它返回EOF。必须通过ferror或feof区分这两种情况
+函数原型
+ #include<stdio.h>
+
+ int fgetc(FILE *stream);
+ int getc(FILE *stream);
+ int getchar();
+ getc函数的作用和fgetc一样，但有可能被是想一个宏，
+ getchar函数的作用相当于getc（stdin），从标准输入里读取下一个字符。
+
+ fputc，putc和putchar函数
+ fputc函数把一个字符写到一个输出文件流中。它返回写入的值，如果失败，则返回EOF
+ 原型：
+ #include<stdio.h>
+
+ int fputc(int c,FIEL *stream);
+ int putc(int c,FIEL *stream);
+ int putchar(int c);
+ putchar相当于putc（c，stdout），把单个字符写到标准输出。
+ 注意：putchar和getchar都是把字符当作int类型而不是char类型来使用 这就允许文件尾（EOF）标识取值-1这是一个超出字符数字编码范围的值。
+
+
+
+ fgets和gets函数
+ fgets函数从文件流stream里读取一个字符串
+ #include<stdio.h>
+ char *fgets(char *s,int n,FILE *stream);
+ char *gets(char *s);
+
+ fgets把读到的字符写到s指向的字符串里，直到遇到下面的情况：遇到换行符，已经传输里n-1个字符，或者到达了文件尾。他会把遇到的换行符也传递到接收字符串里，再加上一个表示结尾的空字节\0.一次调用最多只能传输n-1个字符，因为它必须把空字节加上以结束字符串。
+ 当成功时，fgets返回一个指向字符串s的指针。如果文件流已经到达文件尾，fgets会设置这个文件流的EOF标识并返回一个空指针。如果出现错误，fgets返回一个空指针并设置errno以指出错误的类型。
+ gets函数类似于fgets，只不过它从标准输入读取数据并丢弃遇到的换行符，它在接受字符串的尾部加上一个null字节
+ gets对传输的字符个数没有限制，所以可能会溢出自己的传输缓冲区。
+
+
+
